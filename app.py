@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 import cv2
 import face_recognition
-from face_recognition_utils import register_face, load_encodings
+from face_utils import register_face, recognize_face
 
 app = Flask(__name__)
 
