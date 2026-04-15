@@ -31,7 +31,6 @@ def mark_attendance(name):
     date = now.strftime("%Y-%m-%d")
     time = now.strftime("%H:%M:%S")
 
-    # prevent duplicate attendance
     cursor.execute("SELECT * FROM attendance WHERE name=? AND date=?", (name, date))
     if not cursor.fetchone():
         cursor.execute(
