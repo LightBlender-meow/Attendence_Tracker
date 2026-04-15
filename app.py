@@ -1,13 +1,11 @@
 from flask import Flask, render_template, request, redirect
 import sqlite3
 from datetime import datetime
-import cv2
-import face_recognition
 from face_utils import register_face, recognize_face
 
 app = Flask(__name__)
 
-# ---------- DATABASE INIT ----------
+# ---------- DATABASE ----------
 def init_db():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
@@ -33,11 +31,9 @@ def mark_attendance(name):
     date = now.strftime("%Y-%m-%d")
     time = now.strftime("%H:%M:%S")
 
-    # prevent duplicate for same day
+    # prevent duplicate attendance
     cursor.execute("SELECT * FROM attendance WHERE name=? AND date=?", (name, date))
-    already_marked = cursor.fetchone()
-
-    if not already_marked:
+    if not cursor.fetchone():
         cursor.execute(
             "INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)",
             (name, date, time)
@@ -59,37 +55,11 @@ def register():
 
 @app.route("/mark")
 def mark():
-    data = load_encodings()
-    video_capture = cv2.VideoCapture(0)
-
-    while True:
-        ret, frame = video_capture.read()
-        rgb_frame = frame[:, :, ::-1]
-
-        faces = face_recognition.face_locations(rgb_frame)
-        encodings = face_recognition.face_encodings(rgb_frame, faces)
-
-        for face_encoding in encodings:
-            matches = face_recognition.compare_faces(data["encodings"], face_encoding)
-
-            if True in matches:
-                index = matches.index(True)
-                name = data["names"][index]
-
-                mark_attendance(name)
-
-                video_capture.release()
-                cv2.destroyAllWindows()
-                return f"{name} marked present!"
-
-        cv2.imshow("Mark Attendance", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    video_capture.release()
-    cv2.destroyAllWindows()
-    return "No face recognized"
+    name = recognize_face()
+    if name:
+        mark_attendance(name)
+        return f"{name} marked present!"
+    return "Face not recognized"
 
 @app.route("/attendance")
 def attendance():
